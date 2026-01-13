@@ -310,20 +310,20 @@ def main():
              else:
                  st.warning("⚠️ Please select a Sector OR input tickers manually.")
                  st.stop()
-            
-            # --- EXECUTION ---
-            st.markdown("### 🔄 Scanning Market...")
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            valid_results = []
-            cleaned_tickers = list(set(final_ticker_list)) # Remove duplicates
-            total_tickers = len(cleaned_tickers)
-            
-            import concurrent.futures
-            
-            # Using ThreadPool in the App to control Progress Bar
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+             
+             # --- EXECUTION ---
+             st.markdown("### 🔄 Scanning Market...")
+             progress_bar = st.progress(0)
+             status_text = st.empty()
+             
+             valid_results = []
+             cleaned_tickers = list(set(final_ticker_list)) # Remove duplicates
+             total_tickers = len(cleaned_tickers)
+             
+             import concurrent.futures
+             
+             # Using ThreadPool in the App to control Progress Bar
+             with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
                 ingest = engine.DataIngestion() 
                 analyzer = engine.SmartMoneyAnalyzer()
                 
