@@ -301,15 +301,15 @@ def main():
                  scan_mode = "MANUAL"
                  raw_list = user_tickers.upper().replace(" ", "").split(',')
                  final_ticker_list = [t for t in raw_list if t]
-                
-            elif selected_sector != "Manual Input / None":
-                # Priority 2: Sector Selection
-                scan_mode = "SECTOR_TOP10"
-                final_ticker_list = SECTOR_MAP[selected_sector]
-                
-            else:
-                st.warning("⚠️ Please select a Sector OR input tickers manually.")
-                st.stop()
+                 
+             elif selected_sector != "Manual Input / None":
+                 # Priority 2: Sector Selection
+                 scan_mode = "SECTOR_TOP10"
+                 final_ticker_list = SECTOR_MAP[selected_sector]
+                 
+             else:
+                 st.warning("⚠️ Please select a Sector OR input tickers manually.")
+                 st.stop()
             
             # --- EXECUTION ---
             st.markdown("### 🔄 Scanning Market...")
