@@ -299,8 +299,8 @@ def main():
              if user_tickers.strip():
                  # Priority 1: User Manual Input
                  scan_mode = "MANUAL"
-                raw_list = user_tickers.upper().replace(" ", "").split(',')
-                final_ticker_list = [t for t in raw_list if t]
+                 raw_list = user_tickers.upper().replace(" ", "").split(',')
+                 final_ticker_list = [t for t in raw_list if t]
                 
             elif selected_sector != "Manual Input / None":
                 # Priority 2: Sector Selection
