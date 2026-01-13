@@ -292,73 +292,62 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
         if scan_btn:
-             scan_mode = "MANUAL"
-             final_ticker_list = []
-             
-             # --- DECISION ENGINE ---
-             if user_tickers.strip():
-                 # Priority 1: User Manual Input
-                 scan_mode = "MANUAL"
-                 raw_list = user_tickers.upper().replace(" ", "").split(',')
-                 final_ticker_list = [t for t in raw_list if t]
-                 
-             elif selected_sector != "Manual Input / None":
-                 # Priority 2: Sector Selection
-                 scan_mode = "SECTOR_TOP10"
-                 final_ticker_list = SECTOR_MAP[selected_sector]
-                 
-             else:
-                 st.warning("⚠️ Please select a Sector OR input tickers manually.")
-                 st.stop()
-             
-             # --- EXECUTION ---
-             st.markdown("### 🔄 Scanning Market...")
-             progress_bar = st.progress(0)
-             status_text = st.empty()
-             
-             valid_results = []
-             cleaned_tickers = list(set(final_ticker_list)) # Remove duplicates
-             total_tickers = len(cleaned_tickers)
-             
-             import concurrent.futures
-             
-             # Using ThreadPool in the App to control Progress Bar
-             with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            scan_mode = "MANUAL"
+            final_ticker_list = []
+            
+            # --- DECISION ENGINE ---
+            if user_tickers.strip():
+                # Priority 1: User Manual Input
+                scan_mode = "MANUAL"
+                raw_list = user_tickers.upper().replace(" ", "").split(',')
+                final_ticker_list = [t for t in raw_list if t]
+                
+            elif selected_sector != "Manual Input / None":
+                # Priority 2: Sector Selection
+                scan_mode = "SECTOR_TOP10"
+                final_ticker_list = SECTOR_MAP[selected_sector]
+                
+            else:
+                st.warning("⚠️ Please select a Sector OR input tickers manually.")
+                st.stop()
+            
+            # --- EXECUTION ---
+            st.markdown("### 🔄 Scanning Market...")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            valid_results = []
+            cleaned_tickers = list(set(final_ticker_list))
+            total_tickers = len(cleaned_tickers)
+            
+            # Using ThreadPool for parallel fetching
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
                 ingest = engine.DataIngestion() 
                 analyzer = engine.SmartMoneyAnalyzer()
                 
-                # Submit all tasks
                 future_to_ticker = {executor.submit(ingest.fetch_data, t): t for t in cleaned_tickers}
-                
                 completed_count = 0
                 
                 for future in concurrent.futures.as_completed(future_to_ticker):
                     t = future_to_ticker[future]
                     completed_count += 1
                     
-                    # Update Progress
                     progress = int((completed_count / total_tickers) * 100)
                     progress_bar.progress(progress)
                     status_text.text(f"Scanning {t} ({completed_count}/{total_tickers})")
                     
                     try:
                         df = future.result()
-                        
-                        # 1. PRE-SCREENING GATE (Safety Filter)
                         is_safe, reason = ingest.check_safety_criteria(df)
                         
                         if is_safe:
-                            # 2. RUN HEAVY CALCULATIONS
                             df = ingest.calculate_indicators(df)
-                            
-                            # 3. GET LAST ROW & ANALYZE
                             latest = df.iloc[-1].to_dict()
                             recent_14d = df.iloc[-14:]
                             latest['max_rvol_14d'] = recent_14d['rvol'].max() if not recent_14d.empty else 0
                             
                             analysis = analyzer.analyze_single_row(pd.Series(latest))
                             
-                            # 4. APPEND TO LIST
                             valid_results.append({
                                 "Ticker": t,
                                 "Close": f"{latest['close']:,.0f}",
@@ -371,7 +360,6 @@ def main():
                             })
                             
                     except Exception as e:
-                        # Fail silently for individual stocks to keep loop running
                         continue
 
             progress_bar.empty()
@@ -382,15 +370,12 @@ def main():
             else:
                 df_res = pd.DataFrame(valid_results)
                 
-                 # --- RANKING ALGORITHM (Top 10) ---
+                # --- RANKING ALGORITHM (Top 10) ---
                 if scan_mode == "SECTOR_TOP10":
-                    # Sort by Score (Desc) then RVOL (Desc)
                     df_res = df_res.sort_values(by=["Signal Score", "RVOL (Today)"], ascending=[False, False])
-                    # Slice Top 10
                     df_res = df_res.head(10)
                     st.success(f"✅ Displaying Top 10 High-Momentum Stocks in {selected_sector}")
                 else:
-                    # Manual Mode: Sort by likely interesting ones
                     df_res = df_res.sort_values(by="Max RVOL (14D)", ascending=False)
                     
                 st.session_state['scan_results'] = df_res
