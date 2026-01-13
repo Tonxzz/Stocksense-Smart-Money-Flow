@@ -52,19 +52,120 @@ SECTOR_MAP = {
 
 st.markdown(f"""
 <style>
-    .block-container {{ padding-top: 2rem; padding-bottom: 2rem; }}
-    .stApp {{ background-color: {COLORS['bg_main']}; }}
-    section[data-testid="stSidebar"] {{ background-color: #161B22; }}
-    .stTextInput input, .stDateInput input, .stSelectbox div[data-baseweb="select"] {{
-        background-color: #0d1117; color: white; border: 1px solid #30363d;
+    /* GLOBAL FONTS & THEME */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    
+    html, body, [class*="css"] {{
+        font-family: 'Inter', sans-serif;
     }}
-    .metric-card {{
-        background-color: {COLORS['bg_card']};
-        padding: 15px; border-radius: 8px; border: 1px solid #30363d;
-        text-align: center;
+    
+    .stApp {{
+        background-color: #0E1117;
+        background-image: radial-gradient(circle at 50% 0%, #1c2333 0%, #0E1117 70%);
+        background-attachment: fixed;
     }}
-    .metric-val {{ font-size: 1.5rem; font-weight: bold; color: white; }}
-    .metric-lbl {{ font-size: 0.8rem; color: {COLORS['text_secondary']}; }}
+    
+    /* REMOVE STREAMLIT PADDING */
+    .block-container {{
+        padding-top: 2rem;
+        padding-bottom: 5rem;
+    }}
+
+    /* CUSTOM CARDS */
+    .dashboard-card {{
+        background-color: #161B22;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+    }}
+    
+    /* GRADIENT TITLES */
+    .gradient-text {{
+        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }}
+    .sub-gradient-text {{
+        background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }}
+
+    /* CUSTOM METRICS GRID */
+    .metric-grid {{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 2rem;
+    }}
+    
+    .metric-box {{
+        background: linear-gradient(145deg, #1E232F, #161B22);
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: left;
+        transition: transform 0.2s;
+    }}
+    
+    .metric-box:hover {{
+        transform: translateY(-2px);
+        border-color: #58a6ff;
+    }}
+
+    .metric-label {{
+        color: #8b949e;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }}
+    
+    .metric-value {{
+        color: #f0f6fc;
+        font-size: 1.8rem;
+        font-weight: 700;
+    }}
+    
+    .metric-delta {{
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 5px;
+    }}
+    
+    .delta-pos {{ color: #3fb950; }}
+    .delta-neg {{ color: #f85149; }}
+    .delta-neu {{ color: #8b949e; }}
+
+    /* SIDEBAR POLISH */
+    section[data-testid="stSidebar"] {{
+        background-color: #0d1117;
+        border-right: 1px solid #30363d;
+    }}
+    
+    /* BUTTONS */
+    .stButton button {{
+        background: linear-gradient(45deg, #238636, #2ea043);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }}
+    .stButton button:hover {{
+        background: linear-gradient(45deg, #2ea043, #3fb950);
+        box-shadow: 0 0 15px rgba(46, 160, 67, 0.4);
+        transform: scale(1.02);
+    }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -163,9 +264,13 @@ def main():
     # PAGE 1: SMART SCREENER
     # ------------------------------------------------------------------
     if st.session_state['page'] == 'screener':
-        st.title("🔍 Smart Money Flow Screener")
-        st.markdown("Scan top IDX stocks for **High Relative Volume (RVOL)** and **Institutional Accumulation**.")
+        # Header
+        st.markdown('<div class="gradient-text">StockSense Pro</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sub-gradient-text">Institutional Smart Money Flow Screener</div>', unsafe_allow_html=True)
+        st.write("")
         
+        # --- INPUT SECTION (CARD) ---
+        st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
         col1, col2 = st.columns([3, 1])
         with col1:
             # 1. Sector Selection
@@ -184,15 +289,16 @@ def main():
             st.write("")
             st.write("") # Spacing
             scan_btn = st.button("🚀 SCAN MARKET", type="primary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         if scan_btn:
-            scan_mode = "MANUAL"
-            final_ticker_list = []
-            
-            # --- DECISION ENGINE ---
-            if user_tickers.strip():
-                # Priority 1: User Manual Input
-                scan_mode = "MANUAL"
+             scan_mode = "MANUAL"
+             final_ticker_list = []
+             
+             # --- DECISION ENGINE ---
+             if user_tickers.strip():
+                 # Priority 1: User Manual Input
+                 scan_mode = "MANUAL"
                 raw_list = user_tickers.upper().replace(" ", "").split(',')
                 final_ticker_list = [t for t in raw_list if t]
                 
@@ -295,6 +401,7 @@ def main():
             
             # Interactive Dataframe
             st.markdown("### 📊 Scanning Results")
+            st.markdown('<div class="dashboard-card">', unsafe_allow_html=True)
             event = st.dataframe(
                 res_df,
                 use_container_width=True,
@@ -324,6 +431,7 @@ def main():
                 selection_mode="single-row",
                 on_select="rerun"
             )
+            st.markdown('</div>', unsafe_allow_html=True)
             
             # Handling Selection
             if len(event.selection['rows']) > 0:
@@ -371,12 +479,44 @@ def main():
         analyzer = engine.SmartMoneyAnalyzer()
         analysis = analyzer.analyze_single_row(last_row)
         
-        # Top Metrics Row
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Current Price", f"{last_row['close']:,.0f}", f"{(last_row['close']-df.iloc[-2]['close']):,.0f}")
-        m2.metric("RVOL", f"{last_row['rvol']:.2f}", "Spike" if last_row['rvol'] > 1.5 else "Normal", delta_color="normal")
-        m3.metric("MFI (Smart Money)", f"{last_row['mfi']:.1f}", "Oversold" if last_row['mfi'] < 20 else "Neutral")
-        m4.metric("Trend vs VWAP", "BULLISH" if last_row['close'] > last_row['vwap'] else "BEARISH")
+        # Top Metrics Row (Custom HTML)
+        price_change = last_row['close'] - df.iloc[-2]['close']
+        price_delta_class = "delta-pos" if price_change >= 0 else "delta-neg"
+        
+        rvol_val = last_row['rvol']
+        rvol_delta_class = "delta-pos" if rvol_val > 1.5 else "delta-neu"
+        
+        mfi_val = last_row['mfi']
+        mfi_status = "OVERSOLD" if mfi_val < 20 else ("OVERBOUGHT" if mfi_val > 80 else "NEUTRAL")
+        mfi_class = "delta-pos" if mfi_val < 20 else "delta-neu"
+        
+        trend_status = "BULLISH" if last_row['close'] > last_row['vwap'] else "BEARISH"
+        trend_class = "delta-pos" if trend_status == "BULLISH" else "delta-neg"
+
+        st.markdown(f"""
+        <div class="metric-grid">
+            <div class="metric-box">
+                <div class="metric-label">Current Price</div>
+                <div class="metric-value">{last_row['close']:,.0f}</div>
+                <div class="metric-delta {price_delta_class}">{price_change:+,.0f} IDR</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Relative Volume</div>
+                <div class="metric-value">{rvol_val:.2f}x</div>
+                <div class="metric-delta {rvol_delta_class}">{'🔥 SPIKE' if rvol_val > 1.5 else 'NORMAL'}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Money Flow Index</div>
+                <div class="metric-value">{mfi_val:.1f}</div>
+                <div class="metric-delta {mfi_class}">{mfi_status}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Trend vs VWAP</div>
+                <div class="metric-value" style="font-size: 1.5rem;">{trend_status}</div>
+                <div class="metric-delta {trend_class}">{last_row['close']:,.0f} vs {last_row['vwap']:,.0f}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # Main Chart
         st.markdown("### 📉 Smart Money Structure")
